@@ -1,8 +1,9 @@
-﻿namespace Phonebook.Models
+﻿using Phonebook.Models;
+
+namespace Phonebook.ViewModels
 {
-    public class Record
+    public class RecordViewModel
     {
-        public int Id { get; set; }
         public string? Name { get; set; }
         public string? Surname { get; set; }
         public string? FatherName { get; set; }
@@ -10,7 +11,6 @@
         public List<string>? WorkNumber { get; set; }
         public List<string>? PersonalNumber { get; set; }
         public List<string>? WorkMobileNumber { get; set; }
-        public int SubdivisionID { get; set; }
-        public Subdivision? Subdivision { get; set; }
+        public List<Subdivision>? Subdivision { get; set; }
     }
 }

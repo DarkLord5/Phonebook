@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Phonebook.Data;
 using Phonebook.Models;
+using Phonebook.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,6 +18,10 @@ builder.Services.AddDbContext<PhonebookContext>(options => options.UseNpgsql(con
 
 builder.Services.AddIdentity<User, IdentityRole>()
     .AddEntityFrameworkStores<PhonebookContext>();
+
+builder.Services.AddTransient<IRecordService, RecordService>();
+
+builder.Services.AddTransient<IUserService, UserService>();
 
 var app = builder.Build();
 
