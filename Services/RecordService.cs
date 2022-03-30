@@ -15,7 +15,7 @@ namespace Phonebook.Services
             _context = context;
         }
 
-        private async Task<List<Subdivision>> GetSubdivisionsAsync(Record record)
+        private async Task<List<Subdivision>> GetSubdivisionsAsync(Record record) //Subdivision hierarchy for each record
         {
             var currentSub = await _context.Subdivisions.Where(s => s.Id == record.SubdivisionID).FirstAsync();
 
@@ -31,7 +31,7 @@ namespace Phonebook.Services
             return subList;
         }
 
-        private async Task<List<RecordViewModel>> ConvertToViewModel(List<Record> records)
+        private async Task<List<RecordViewModel>> ConvertToViewModel(List<Record> records) //Converter
         {
             var recordViewModelList = new List<RecordViewModel>();
 
@@ -57,12 +57,77 @@ namespace Phonebook.Services
         }
 
 
-        public async Task<List<RecordViewModel>> GetAllRecordsAsync()
+
+        private async Task<List<RecordViewModel>> GetAllRecordsAsync() //return all records
         {
             var records = await _context.Records.ToListAsync();
 
             return await ConvertToViewModel(records);
         }
+
+
+        public async Task<List<RecordViewModel>> SearchAndGetRecordsAsync(string name,
+                string surname, string fathername, string position, string phonenumber) //Search by parametrs
+        {
+            var records = await _context.Records.ToListAsync();
+
+            if (!string.IsNullOrEmpty(name))
+            {
+                records = records.Where(r => r.Name.ToLower() == name.ToLower()).ToList();
+            }
+
+            if (!string.IsNullOrEmpty(surname))
+            {
+                records = records.Where(r => r.Surname.ToLower() == surname.ToLower()).ToList();
+            }
+
+            if (!string.IsNullOrEmpty(fathername))
+            {
+                records = records.Where(r => r.FatherName.ToLower() == fathername.ToLower()).ToList();
+            }
+
+            if (!string.IsNullOrEmpty(position))
+            {
+                records = records.Where(r => r.Position.ToLower() == position.ToLower()).ToList();
+            }
+
+            if (!string.IsNullOrEmpty(phonenumber))
+            {
+                records = records.Where(r => r.PersonalNumber.Contains(phonenumber) ||
+                    r.WorkNumber.Contains(phonenumber) || r.WorkMobileNumber.Contains(phonenumber)).ToList();
+            }
+
+            return await ConvertToViewModel(records);
+        }
+
+        private async Task<List<Record>> GetSubdivis(int id) //Рекурсивный метод для получения иерархии
+        {
+            var records = await _context.Records.Where(r => r.SubdivisionID == id).ToListAsync();
+
+            var subDivs = await _context.Subdivisions.Where(s => s.ParentId == id).ToListAsync();
+
+            foreach (var subdiv in subDivs)
+            {
+                records.AddRange(await GetSubdivis(subdiv.Id));
+            }
+
+            return records;
+        }
+
+        public async Task<List<RecordViewModel>> FindBySubdivisionAsync(int subId)
+        {
+            var subDiv = await _context.Subdivisions.FindAsync(subId);
+
+            if (subDiv != null)
+            {
+                var records = await GetSubdivis(subDiv.Id);
+
+                return await ConvertToViewModel(records);
+            }
+
+            return new List<RecordViewModel>();
+        }
+
 
 
         public async Task<List<RecordViewModel>> CreateRecordAsync(Record record)
@@ -79,13 +144,23 @@ namespace Phonebook.Services
             return await GetAllRecordsAsync();
         }
 
+
         public async Task<List<RecordViewModel>> UpdateRecordAsync(Record record, int id)
         {
             var oldRecord = await _context.Records.Where(r => r.Id == id).FirstAsync();
 
-            if (record.Id == oldRecord.Id) // добавить доп проверки
+            if (oldRecord != null) // добавить доп проверки
             {
-                _context.Entry(record).State = EntityState.Modified;
+                oldRecord.Name = record.Name;
+                oldRecord.Surname = record.Surname;
+                oldRecord.FatherName = record.FatherName;
+                oldRecord.Position = record.Position;
+                oldRecord.SubdivisionID = record.SubdivisionID;
+                oldRecord.PersonalNumber = record.PersonalNumber;
+                oldRecord.WorkNumber = record.WorkNumber;
+                oldRecord.WorkMobileNumber = record.WorkMobileNumber;
+
+                _context.Entry(oldRecord).State = EntityState.Modified;
 
                 await _context.SaveChangesAsync();
             }
@@ -96,12 +171,12 @@ namespace Phonebook.Services
 
         public async Task<List<RecordViewModel>> DeleteRecordsAsync(List<int> idList)
         {
-            foreach (int id in idList)
+            foreach (var id in idList)
             {
-                var recordToDelete = await _context.Records.Where(r => r.Id == id).FirstAsync();
-
-                if (recordToDelete != null)
+                if (await _context.Records.Where(r => r.Id == id).AnyAsync())
                 {
+                    var recordToDelete = await _context.Records.Where(r => r.Id == id).FirstAsync();
+
                     _context.Records.Remove(recordToDelete);
                 }
             }
@@ -110,55 +185,5 @@ namespace Phonebook.Services
 
             return await GetAllRecordsAsync();
         }
-
-
-
-        public async Task<List<RecordViewModel>> SearchAndGetRecordsAsync(Record parameters)
-        {
-            var records = await _context.Records.ToListAsync();
-
-            if (!string.IsNullOrEmpty(parameters.Name))
-            {
-                records = records.Where(r => r.Name.ToLower() == parameters.Name.ToLower()).ToList();
-            }
-
-            if (!string.IsNullOrEmpty(parameters.Surname))
-            {
-                records = records.Where(r => r.Surname.ToLower() == parameters.Surname.ToLower()).ToList();
-            }
-
-            if (!string.IsNullOrEmpty(parameters.FatherName))
-            {
-                records = records.Where(r => r.FatherName.ToLower() == parameters.FatherName.ToLower()).ToList();
-            }
-
-            if (!string.IsNullOrEmpty(parameters.Position))
-            {
-                records = records.Where(r => r.Position.ToLower() == parameters.Position.ToLower()).ToList();
-            }
-
-            if (parameters.Subdivision != null)
-                if (!string.IsNullOrEmpty(parameters.Subdivision.Name))
-                {
-                    var subdivList = await _context.Subdivisions.Where(s => s.Name.ToLower() == parameters.Subdivision.Name.ToLower()).
-                        Select(s => s.Id).ToListAsync();
-
-                    if (subdivList != null)
-                        records = records.Where(r => subdivList.Contains(r.SubdivisionID)).ToList();
-                }
-
-            if (parameters.PersonalNumber != null)
-            {
-                string phone = parameters.PersonalNumber.First();
-
-                records = records.Where(r => r.PersonalNumber.Contains(phone) ||
-                    r.WorkNumber.Contains(phone) || r.WorkMobileNumber.Contains(phone)).ToList();
-            }
-
-
-            return await ConvertToViewModel(records);
-        }
-
-
     }
 }
