@@ -2,7 +2,6 @@
 using Phonebook.Data;
 using Phonebook.Models;
 using Phonebook.ViewModels;
-using System.Linq;
 
 namespace Phonebook.Services
 {
@@ -40,6 +39,7 @@ namespace Phonebook.Services
 
                 var recordViewModel = new RecordViewModel()
                 {
+                    Id = record.Id,
                     Name = record.Name,
                     Surname = record.Surname,
                     FatherName = record.FatherName,
@@ -125,16 +125,18 @@ namespace Phonebook.Services
                 return await ConvertToViewModel(records);
             }
 
-            return new List<RecordViewModel>();
+            throw new Exception("There is no such subdivision");
         }
 
 
 
         public async Task<List<RecordViewModel>> CreateRecordAsync(Record record)
         {
-            if (record == null)//добавить доп проверки
+            if (string.IsNullOrEmpty(record.Name) || string.IsNullOrEmpty(record.Surname) || string.IsNullOrEmpty(record.FatherName)
+                || string.IsNullOrEmpty(record.Position) || (!await _context.Subdivisions.AnyAsync(s => s.Id == record.SubdivisionID))
+                || (record.PersonalNumber == null) || (record.WorkNumber == null) || (record.WorkMobileNumber == null))
             {
-                throw new ArgumentNullException(nameof(record)); //Поменять.
+                throw new Exception("Invalid entry value - one or more required fields are empty!!");
             }
 
             _context.Records.Add(record);
@@ -147,10 +149,16 @@ namespace Phonebook.Services
 
         public async Task<List<RecordViewModel>> UpdateRecordAsync(Record record, int id)
         {
-            var oldRecord = await _context.Records.Where(r => r.Id == id).FirstAsync();
 
-            if (oldRecord != null) // добавить доп проверки
+            var check = await _context.Records.AnyAsync(r => r.Id == id);
+
+            if (check && !string.IsNullOrEmpty(record.Name) && !string.IsNullOrEmpty(record.Surname)
+                && !string.IsNullOrEmpty(record.FatherName) && !string.IsNullOrEmpty(record.Position)
+                && (await _context.Subdivisions.AnyAsync(s => s.Id == record.SubdivisionID)) && (record.PersonalNumber != null)
+                && (record.WorkNumber != null) && (record.WorkMobileNumber != null))
             {
+                var oldRecord = await _context.Records.Where(r => r.Id == id).FirstAsync();
+
                 oldRecord.Name = record.Name;
                 oldRecord.Surname = record.Surname;
                 oldRecord.FatherName = record.FatherName;
@@ -163,14 +171,21 @@ namespace Phonebook.Services
                 _context.Entry(oldRecord).State = EntityState.Modified;
 
                 await _context.SaveChangesAsync();
+
+                return await GetAllRecordsAsync();
             }
 
-            return await GetAllRecordsAsync();
+            throw new Exception("Ivalid value to update");
         }
 
 
         public async Task<List<RecordViewModel>> DeleteRecordsAsync(List<int> idList)
         {
+            if (idList == null)
+            {
+                throw new Exception("This list is empty!");
+            }
+
             foreach (var id in idList)
             {
                 if (await _context.Records.Where(r => r.Id == id).AnyAsync())
