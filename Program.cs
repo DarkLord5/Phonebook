@@ -23,6 +23,8 @@ builder.Services.AddTransient<IRecordService, RecordService>();
 
 builder.Services.AddTransient<IUserService, UserService>();
 
+builder.Services.AddTransient<ISubdivisionService, SubdivisionService>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
