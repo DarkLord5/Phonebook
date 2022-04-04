@@ -12,10 +12,10 @@ namespace Phonebook.Services
         {
             _phonebookContext = phonebookContext;
         }
-        public async Task<List<Subdivision>> GetAllSubdivisionsAsync() => 
+        public async Task<List<Subdivision>> GetAllSubdivisionsAsync() =>
             await _phonebookContext.Subdivisions.ToListAsync();
 
-        public async Task<Subdivision> CreateSubdivisionAsync(Subdivision subdivision)
+        public async Task<Subdivision?> CreateSubdivisionAsync(Subdivision subdivision)
         {
 
             if (!string.IsNullOrEmpty(subdivision.Name))
@@ -27,16 +27,17 @@ namespace Phonebook.Services
                 return subdivision;
             }
 
-            throw new Exception("This subdivision is empty!");
+            return null;
+            
         }
 
-        public async Task<List<Subdivision>> DeleteSubdivisionAsync(int id)
+        public async Task<List<Subdivision>?> DeleteSubdivisionAsync(int id)
         {
             var subdiv = await _phonebookContext.Subdivisions.FindAsync(id);
 
             if (subdiv == null)
             {
-                throw new Exception("There is no such subdivision!");
+                return null;
             }
 
             _phonebookContext.Subdivisions.Remove(subdiv);
@@ -46,19 +47,14 @@ namespace Phonebook.Services
             return await GetAllSubdivisionsAsync();
         }
 
-        
 
-        public async Task<Subdivision> UpdateSubdivisionAsync(int id, Subdivision subdivision)
+
+        public async Task<Subdivision?> UpdateSubdivisionAsync(int id, Subdivision subdivision)
         {
             var newSubdiv = new Subdivision() { Id = id, Name = subdivision.Name };
 
-            if (string.IsNullOrEmpty(newSubdiv.Name))
-            {
-                throw new Exception("Your new subdivision is empty!");
-            }
-
-            if (!_phonebookContext.Subdivisions.Any(e => e.Id == id))
-                throw new Exception("There is no such subdivision!");
+            if (string.IsNullOrEmpty(newSubdiv.Name) || !_phonebookContext.Subdivisions.Any(e => e.Id == id))
+                return null;
 
             _phonebookContext.Entry(newSubdiv).State = EntityState.Modified;
 

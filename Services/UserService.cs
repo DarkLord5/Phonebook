@@ -15,7 +15,7 @@ namespace Phonebook.Services
             _signInManager = signInManager;
         }
 
-        public async Task<User> Registration(RegistrationViewModel newUser)
+        public async Task<User?> Registration(RegistrationViewModel newUser)
         {
 
             User user = new()
@@ -37,8 +37,7 @@ namespace Phonebook.Services
                 return user;
             }
 
-            return new User();
-            //throw new BadRequestException("Registration failed!");
+            return null;
         }
 
         public async Task<bool> Login(LoginViewModel user)
@@ -52,7 +51,6 @@ namespace Phonebook.Services
             }
 
             return false;
-            //throw new BadRequestException("Authorization failed!");
         }
 
         public async Task Logout()

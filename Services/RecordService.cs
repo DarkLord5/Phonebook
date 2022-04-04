@@ -114,7 +114,7 @@ namespace Phonebook.Services
             return records;
         }
 
-        public async Task<List<RecordViewModel>> FindBySubdivisionAsync(int subId)
+        public async Task<List<RecordViewModel>?> FindBySubdivisionAsync(int subId)
         {
             var subDiv = await _context.Subdivisions.FindAsync(subId);
 
@@ -125,18 +125,19 @@ namespace Phonebook.Services
                 return await ConvertToViewModel(records);
             }
 
+            return null;
             throw new Exception("There is no such subdivision");
         }
 
 
 
-        public async Task<List<RecordViewModel>> CreateRecordAsync(Record record)
+        public async Task<List<RecordViewModel>?> CreateRecordAsync(Record record)
         {
             if (string.IsNullOrEmpty(record.Name) || string.IsNullOrEmpty(record.Surname) || string.IsNullOrEmpty(record.FatherName)
                 || string.IsNullOrEmpty(record.Position) || (!await _context.Subdivisions.AnyAsync(s => s.Id == record.SubdivisionID))
                 || (record.PersonalNumber == null) || (record.WorkNumber == null) || (record.WorkMobileNumber == null))
             {
-                throw new Exception("Invalid entry value - one or more required fields are empty!!");
+                return null;
             }
 
             _context.Records.Add(record);
@@ -147,7 +148,7 @@ namespace Phonebook.Services
         }
 
 
-        public async Task<List<RecordViewModel>> UpdateRecordAsync(Record record, int id)
+        public async Task<List<RecordViewModel>?> UpdateRecordAsync(Record record, int id)
         {
 
             var check = await _context.Records.AnyAsync(r => r.Id == id);
@@ -175,15 +176,15 @@ namespace Phonebook.Services
                 return await GetAllRecordsAsync();
             }
 
-            throw new Exception("Ivalid value to update");
+            return null;
         }
 
 
-        public async Task<List<RecordViewModel>> DeleteRecordsAsync(List<int> idList)
+        public async Task<List<RecordViewModel>?> DeleteRecordsAsync(List<int> idList)
         {
-            if (idList == null)
+            if (idList.Count == 0)
             {
-                throw new Exception("This list is empty!");
+                return null;
             }
 
             foreach (var id in idList)
