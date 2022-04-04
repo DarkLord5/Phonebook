@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Phonebook.Filters;
 using Phonebook.Models;
 using Phonebook.Services;
 using Phonebook.ViewModels;
@@ -19,11 +20,32 @@ namespace Phonebook.Controllers
 
         [HttpPost]
         [Route("api/Registration")]
-        public async Task<ActionResult<User>> Registration(RegistrationViewModel newUser) => Ok(await _userService.Registration(newUser));
+        [PhonebookAsyncExceptionFilter]
+        public async Task<ActionResult<User>> Registration(RegistrationViewModel newUser)
+        {
+            var result = await _userService.Registration(newUser);
+
+            if(result == null)
+            {
+                throw new Exception("Registration failed!");
+            }
+
+            return result;
+        }
 
         [HttpPost]
         [Route("api/Login")]
-        public async Task<ActionResult<bool>> Login(LoginViewModel user) => Ok(await _userService.Login(user));
+        [PhonebookAsyncExceptionFilter]
+        public async Task<ActionResult<bool>> Login(LoginViewModel user)
+        {
+            var result = await _userService.Login(user);
+            if (result)
+            {
+                return result;
+            }
+
+            throw new Exception("Authorization failed!");
+        }
 
         [HttpPost]
         [Route("api/Logout")]

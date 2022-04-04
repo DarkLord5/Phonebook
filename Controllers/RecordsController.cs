@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Phonebook.Filters;
 using Phonebook.Models;
 using Phonebook.Services;
 using Phonebook.ViewModels;
@@ -24,32 +25,64 @@ namespace Phonebook.Controllers
             return await _recordService.SearchAndGetRecordsAsync(name, surname, fathername, position, phonenumber);
         }
 
+
+        [PhonebookAsyncExceptionFilter]
         [HttpGet("{id}")]
         public async Task<ActionResult<List<RecordViewModel>>> GetSubdivisionRecords(int id)
         {
-            return await _recordService.FindBySubdivisionAsync(id);
+            var result = await _recordService.FindBySubdivisionAsync(id);
+
+            if (result == null)
+            {
+                throw new Exception("Ivalid value to update!");
+            }
+
+            return result;
         }
 
 
+        [PhonebookAsyncExceptionFilter]
         [HttpPut("{id}")]
         public async Task<ActionResult<List<RecordViewModel>>> UpdateRecord(int id, Record record)
         {
-            return await _recordService.UpdateRecordAsync(record, id);
+            var result = await _recordService.UpdateRecordAsync(record, id);
+
+            if (result == null)
+            {
+                throw new Exception("Ivalid value to update!");
+            }
+
+            return result;
         }
 
 
-
+        [PhonebookAsyncExceptionFilter]
         [HttpPost]
         public async Task<ActionResult<List<RecordViewModel>>> CreateRecord(Record record)
         {
-            return await _recordService.CreateRecordAsync(record);
+            var result = await _recordService.CreateRecordAsync(record);
+
+            if (result == null)
+            {
+                throw new Exception("Invalid entry value - one or more required fields are empty!");
+            }
+
+            return result;
         }
 
         // DELETE: api/Records/5
+        [PhonebookAsyncExceptionFilter]
         [HttpDelete]
-        public async Task<ActionResult<List<RecordViewModel>>> DeleteRecord(List<int> idList)
+        public async Task<ActionResult<List<RecordViewModel>?>> DeleteRecord(List<int> idList)
         {
-            return await _recordService.DeleteRecordsAsync(idList);
+            var result = await _recordService.DeleteRecordsAsync(idList);
+
+            if (result == null)
+            {
+                throw new Exception("This list is empty!");
+            }
+
+            return result;
         }
     }
 }
